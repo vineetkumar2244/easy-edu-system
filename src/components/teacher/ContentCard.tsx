@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { getFile, deleteFile } from "@/utils/fileStorage";
 
 interface ContentCardProps {
   content: Content;
@@ -26,6 +27,11 @@ export function ContentCard({ content, onDelete }: ContentCardProps) {
   const { toast } = useToast();
 
   const handleDelete = () => {
+    // Delete the file from storage if it's a stored file path
+    if (content.url.startsWith('uploads/')) {
+      deleteFile(content.url);
+    }
+    
     onDelete(content.id);
     toast({
       title: "Content deleted",

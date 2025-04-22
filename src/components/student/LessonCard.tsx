@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Content } from "@/contexts/DataContext";
@@ -5,6 +6,7 @@ import { Download, FileVideo, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { getFile } from "@/utils/fileStorage";
 
 interface LessonCardProps {
   content: Content;
@@ -14,14 +16,44 @@ export function LessonCard({ content }: LessonCardProps) {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
+  
+  // Get the file data from storage
+  const getFileData = () => {
+    // If it's a stored file path, get the file from storage
+    if (content.url.startsWith('uploads/')) {
+      const fileData = getFile(content.url);
+      if (!fileData) {
+        toast({
+          title: "File not found",
+          description: "The file could not be found in storage.",
+          variant: "destructive",
+        });
+        return null;
+      }
+      return fileData;
+    }
+    
+    // For backward compatibility with existing content that might use a direct URL
+    return {
+      url: content.url,
+      name: content.title,
+      type: content.type === 'video' ? 'video/mp4' : 'application/pdf'
+    };
+  };
 
   const handleDownload = () => {
     setIsDownloading(true);
     
     try {
+      const fileData = getFileData();
+      if (!fileData) {
+        setIsDownloading(false);
+        return;
+      }
+      
       const a = document.createElement('a');
-      a.href = content.url;
-      a.download = `${content.title}.${content.type === "video" ? "mp4" : "pdf"}`;
+      a.href = fileData.url;
+      a.download = fileData.name || `${content.title}.${content.type === "video" ? "mp4" : "pdf"}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -46,8 +78,14 @@ export function LessonCard({ content }: LessonCardProps) {
     try {
       setIsViewing(true);
       
+      const fileData = getFileData();
+      if (!fileData) {
+        setIsViewing(false);
+        return;
+      }
+      
       const iframe = document.createElement('iframe');
-      iframe.src = content.url;
+      iframe.src = fileData.url;
       iframe.style.position = 'fixed';
       iframe.style.top = '0';
       iframe.style.left = '0';
