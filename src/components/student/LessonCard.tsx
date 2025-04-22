@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Content } from "@/contexts/DataContext";
-import { Download, FileVideo, FilePdf } from "lucide-react";
+import { Download, FileVideo, FileText } from "lucide-react";
 import { format } from "date-fns";
 
 interface LessonCardProps {
@@ -34,7 +34,7 @@ export function LessonCard({ content }: LessonCardProps) {
             {content.type === "video" ? (
               <FileVideo className="h-5 w-5 text-edu-primary" />
             ) : (
-              <FilePdf className="h-5 w-5 text-edu-danger" />
+              <FileText className="h-5 w-5 text-edu-danger" />
             )}
           </div>
         </div>
