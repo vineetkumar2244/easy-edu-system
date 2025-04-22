@@ -4,20 +4,96 @@ import { Button } from "@/components/ui/button";
 import { Content } from "@/contexts/DataContext";
 import { Download, FileVideo, FileText } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface LessonCardProps {
   content: Content;
 }
 
 export function LessonCard({ content }: LessonCardProps) {
+  const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const handleDownload = () => {
-    // In a real app, this would trigger a download from a server
-    // For now, we'll just open the content URL
-    window.open(content.url, "_blank");
+    setIsDownloading(true);
+    
+    try {
+      // Create an anchor element
+      const a = document.createElement('a');
+      a.href = content.url;
+      // Set a download attribute with the content title as filename
+      a.download = `${content.title}.${content.type === "video" ? "mp4" : "pdf"}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Download started",
+        description: `${content.title} is being downloaded.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: "Unable to download the file. Please try again later.",
+        variant: "destructive",
+      });
+      console.error("Download error:", error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleView = () => {
-    window.open(content.url, "_blank");
+    try {
+      // For blob URLs, we need to open content in the same tab
+      if (content.url.startsWith('blob:')) {
+        // Create a temporary iframe to display the content directly
+        const iframe = document.createElement('iframe');
+        iframe.src = content.url;
+        iframe.style.position = 'fixed';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.backgroundColor = 'white';
+        iframe.style.zIndex = '9999';
+        
+        // Add close button
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.style.position = 'fixed';
+        closeButton.style.top = '10px';
+        closeButton.style.right = '10px';
+        closeButton.style.zIndex = '10000';
+        closeButton.style.padding = '5px 10px';
+        closeButton.style.backgroundColor = '#f44336';
+        closeButton.style.color = 'white';
+        closeButton.style.border = 'none';
+        closeButton.style.borderRadius = '4px';
+        closeButton.style.cursor = 'pointer';
+        
+        closeButton.onclick = () => {
+          document.body.removeChild(iframe);
+          document.body.removeChild(closeButton);
+          document.body.style.overflow = 'auto';
+        };
+        
+        document.body.style.overflow = 'hidden';
+        document.body.appendChild(iframe);
+        document.body.appendChild(closeButton);
+      } else {
+        // For regular URLs, we can open in a new tab
+        window.open(content.url, "_blank");
+      }
+    } catch (error) {
+      toast({
+        title: "Unable to open content",
+        description: "There was a problem opening this content. Please try downloading it instead.",
+        variant: "destructive",
+      });
+      console.error("View error:", error);
+    }
   };
 
   return (
@@ -46,9 +122,14 @@ export function LessonCard({ content }: LessonCardProps) {
         <Button variant="secondary" className="flex-1" onClick={handleView}>
           {content.type === "video" ? "Watch" : "Read"}
         </Button>
-        <Button variant="outline" className="flex-1" onClick={handleDownload}>
+        <Button 
+          variant="outline" 
+          className="flex-1" 
+          onClick={handleDownload} 
+          disabled={isDownloading}
+        >
           <Download className="h-4 w-4 mr-1" />
-          Download
+          {isDownloading ? "Downloading..." : "Download"}
         </Button>
       </CardFooter>
     </Card>
