@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,17 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Education theme colors
+				edu: {
+					primary: '#1E88E5',    // Main blue
+					secondary: '#0D47A1',  // Darker blue
+					accent: '#FFD54F',     // Accent yellow
+					success: '#4CAF50',    // Success green
+					danger: '#F44336',     // Error/danger red
+					light: '#E3F2FD',      // Light blue background
+					dark: '#1A237E',       // Very dark blue
+					gray: '#78909C'        // Neutral gray
 				}
 			},
 			borderRadius: {
