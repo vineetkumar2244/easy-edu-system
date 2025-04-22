@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 export type ContentType = "video" | "pdf";
@@ -50,6 +49,8 @@ interface DataContextType {
   addContent: (content: Omit<Content, "id" | "createdAt">) => void;
   addQuiz: (quiz: Omit<Quiz, "id" | "createdAt">) => void;
   addQuizAttempt: (attempt: Omit<QuizAttempt, "id" | "submittedAt">) => void;
+  deleteContent: (contentId: string) => void;
+  deleteQuiz: (quizId: string) => void;
   getContentsByClass: (classLevel: ClassLevel) => Content[];
   getQuizzesByClass: (classLevel: ClassLevel) => Quiz[];
   getAttemptsByQuiz: (quizId: string) => QuizAttempt[];
@@ -158,6 +159,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setAttempts(prev => [...prev, newAttempt]);
   };
 
+  const deleteContent = (contentId: string) => {
+    setContents(prev => prev.filter(content => content.id !== contentId));
+  };
+
+  const deleteQuiz = (quizId: string) => {
+    setQuizzes(prev => prev.filter(quiz => quiz.id !== quizId));
+    // Also delete related attempts
+    setAttempts(prev => prev.filter(attempt => attempt.quizId !== quizId));
+  };
+
   const getContentsByClass = (classLevel: ClassLevel) => {
     return contents.filter(content => content.classLevel === classLevel);
   };
@@ -187,6 +198,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addContent,
         addQuiz,
         addQuizAttempt,
+        deleteContent,
+        deleteQuiz,
         getContentsByClass,
         getQuizzesByClass,
         getAttemptsByQuiz,

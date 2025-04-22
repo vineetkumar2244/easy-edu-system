@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useData, ContentType, ClassLevel } from "@/contexts/DataContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { ContentCard } from "./ContentCard";
 
 export function UploadContent() {
   const [title, setTitle] = useState("");
@@ -18,7 +18,7 @@ export function UploadContent() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { addContent } = useData();
+  const { contents, addContent, deleteContent } = useData();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -95,92 +95,115 @@ export function UploadContent() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Upload Learning Material</CardTitle>
-        <CardDescription>
-          Upload video lessons or PDF documents for your students
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Introduction to Fractions"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Brief description of the content..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload Learning Material</CardTitle>
+          <CardDescription>
+            Upload video lessons or PDF documents for your students
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="content-type">Content Type</Label>
-              <Select value={contentType} onValueChange={(value) => setContentType(value as ContentType)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select content type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="video">Video Lesson</SelectItem>
-                  <SelectItem value="pdf">PDF Document</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                placeholder="Introduction to Fractions"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="class-level">Class Level</Label>
-              <Select value={classLevel} onValueChange={(value) => setClassLevel(value as ClassLevel)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option} Grade
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Brief description of the content..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="content-type">Content Type</Label>
+                <Select value={contentType} onValueChange={(value) => setContentType(value as ContentType)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select content type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="video">Video Lesson</SelectItem>
+                    <SelectItem value="pdf">PDF Document</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="class-level">Class Level</Label>
+                <Select value={classLevel} onValueChange={(value) => setClassLevel(value as ClassLevel)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option} Grade
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="file">Upload File</Label>
+              <Input
+                id="file"
+                type="file"
+                accept={contentType === "video" ? "video/*" : contentType === "pdf" ? "application/pdf" : undefined}
+                onChange={(e) => e.target.files && setFile(e.target.files[0])}
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                {contentType === "video"
+                  ? "Accepted formats: MP4, WebM, etc."
+                  : contentType === "pdf"
+                  ? "Accepted format: PDF"
+                  : "Please select a content type first"}
+              </p>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full bg-edu-primary hover:bg-edu-secondary" disabled={isLoading}>
+              {isLoading ? "Uploading..." : "Upload Content"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Uploaded Content</h2>
+        {contents.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {contents.map((content) => (
+              <ContentCard
+                key={content.id}
+                content={content}
+                onDelete={deleteContent}
+              />
+            ))}
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="file">Upload File</Label>
-            <Input
-              id="file"
-              type="file"
-              accept={contentType === "video" ? "video/*" : contentType === "pdf" ? "application/pdf" : undefined}
-              onChange={(e) => e.target.files && setFile(e.target.files[0])}
-              required
-            />
-            <p className="text-sm text-muted-foreground">
-              {contentType === "video"
-                ? "Accepted formats: MP4, WebM, etc."
-                : contentType === "pdf"
-                ? "Accepted format: PDF"
-                : "Please select a content type first"}
-            </p>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full bg-edu-primary hover:bg-edu-secondary" disabled={isLoading}>
-            {isLoading ? "Uploading..." : "Upload Content"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-6 text-muted-foreground">
+              No content uploaded yet.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlusCircle, Trash2, Edit } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export function QuizCreator() {
   const [title, setTitle] = useState("");
@@ -22,12 +22,11 @@ export function QuizCreator() {
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
   
-  // New question form state
   const [questionText, setQuestionText] = useState("");
   const [options, setOptions] = useState<string[]>(["", "", "", ""]);
   const [correctOption, setCorrectOption] = useState<number>(0);
   
-  const { addQuiz } = useData();
+  const { addQuiz, deleteQuiz, quizzes } = useData();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -45,7 +44,6 @@ export function QuizCreator() {
       newOptions.splice(index, 1);
       setOptions(newOptions);
       
-      // Adjust correctOption if needed
       if (correctOption >= index && correctOption > 0) {
         setCorrectOption(correctOption - 1);
       }
@@ -76,12 +74,10 @@ export function QuizCreator() {
     };
     
     if (editingQuestionIndex !== null) {
-      // Edit existing question
       const updatedQuestions = [...questions];
       updatedQuestions[editingQuestionIndex] = newQuestion;
       setQuestions(updatedQuestions);
     } else {
-      // Add new question
       setQuestions([...questions, newQuestion]);
     }
     
@@ -139,7 +135,6 @@ export function QuizCreator() {
         description: "Quiz created successfully",
       });
       
-      // Reset form
       setTitle("");
       setDescription("");
       setClassLevel("");
@@ -156,198 +151,266 @@ export function QuizCreator() {
     }
   };
 
+  const handleDeleteQuiz = (quizId: string) => {
+    deleteQuiz(quizId);
+    toast({
+      title: "Quiz deleted",
+      description: "The quiz has been removed.",
+    });
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create New Quiz</CardTitle>
-        <CardDescription>
-          Create multiple-choice quizzes for your students
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Quiz Title</Label>
-            <Input
-              id="title"
-              placeholder="End of Chapter Algebra Quiz"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Brief description of the quiz..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="class-level">Class Level</Label>
-            <Select value={classLevel} onValueChange={(value) => setClassLevel(value as ClassLevel)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {classOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option} Grade
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label>Questions ({questions.length})</Label>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="flex items-center gap-1"
-                    onClick={() => {
-                      resetQuestionForm();
-                      setShowQuestionForm(true);
-                    }}
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    <span>Add Question</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[625px]">
-                  <DialogHeader>
-                    <DialogTitle>{editingQuestionIndex !== null ? "Edit Question" : "Add New Question"}</DialogTitle>
-                    <DialogDescription>
-                      Create a multiple-choice question with options
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="question-text">Question</Label>
-                      <Textarea
-                        id="question-text"
-                        placeholder="Enter your question here..."
-                        value={questionText}
-                        onChange={(e) => setQuestionText(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Options</Label>
-                      <div className="space-y-2">
-                        {options.map((option, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <RadioGroup value={correctOption.toString()} onValueChange={(value) => setCorrectOption(parseInt(value))}>
-                              <RadioGroupItem value={idx.toString()} id={`option-${idx}`} />
-                            </RadioGroup>
-                            <Input
-                              id={`option-text-${idx}`}
-                              placeholder={`Option ${idx + 1}`}
-                              value={option}
-                              onChange={(e) => handleOptionChange(idx, e.target.value)}
-                              className="flex-1"
-                              required
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveOption(idx)}
-                              disabled={options.length <= 2}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddOption}
-                        disabled={options.length >= 6}
-                        className="mt-2"
-                      >
-                        <PlusCircle className="h-4 w-4 mr-1" />
-                        Add Option
-                      </Button>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Select the correct answer using the radio buttons
-                      </p>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={resetQuestionForm}>
-                      Cancel
-                    </Button>
-                    <Button type="button" onClick={handleSaveQuestion}>
-                      {editingQuestionIndex !== null ? "Update Question" : "Add Question"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New Quiz</CardTitle>
+          <CardDescription>
+            Create multiple-choice quizzes for your students
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Quiz Title</Label>
+              <Input
+                id="title"
+                placeholder="End of Chapter Algebra Quiz"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
             </div>
             
-            {questions.length > 0 ? (
-              <div className="space-y-2 border rounded-md p-2">
-                {questions.map((q, idx) => (
-                  <div key={q.id} className="p-2 bg-muted rounded-md">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">Question {idx + 1}</h4>
-                        <p className="text-sm">{q.question}</p>
-                        <ul className="text-sm mt-1 space-y-1">
-                          {q.options.map((opt, optIdx) => (
-                            <li key={optIdx} className={optIdx === q.correctOption ? "font-medium text-edu-success" : ""}>
-                              {optIdx === q.correctOption ? "✓ " : ""}{opt}
-                            </li>
-                          ))}
-                        </ul>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Brief description of the quiz..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="class-level">Class Level</Label>
+              <Select value={classLevel} onValueChange={(value) => setClassLevel(value as ClassLevel)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option} Grade
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Questions ({questions.length})</Label>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="flex items-center gap-1"
+                      onClick={() => {
+                        resetQuestionForm();
+                        setShowQuestionForm(true);
+                      }}
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      <span>Add Question</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[625px]">
+                    <DialogHeader>
+                      <DialogTitle>{editingQuestionIndex !== null ? "Edit Question" : "Add New Question"}</DialogTitle>
+                      <DialogDescription>
+                        Create a multiple-choice question with options
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="question-text">Question</Label>
+                        <Textarea
+                          id="question-text"
+                          placeholder="Enter your question here..."
+                          value={questionText}
+                          onChange={(e) => setQuestionText(e.target.value)}
+                          required
+                        />
                       </div>
-                      <div className="flex space-x-1">
+                      
+                      <div className="space-y-2">
+                        <Label>Options</Label>
+                        <div className="space-y-2">
+                          {options.map((option, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <RadioGroup value={correctOption.toString()} onValueChange={(value) => setCorrectOption(parseInt(value))}>
+                                <RadioGroupItem value={idx.toString()} id={`option-${idx}`} />
+                              </RadioGroup>
+                              <Input
+                                id={`option-text-${idx}`}
+                                placeholder={`Option ${idx + 1}`}
+                                value={option}
+                                onChange={(e) => handleOptionChange(idx, e.target.value)}
+                                className="flex-1"
+                                required
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveOption(idx)}
+                                disabled={options.length <= 2}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                         <Button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditQuestion(idx)}
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddOption}
+                          disabled={options.length >= 6}
+                          className="mt-2"
                         >
-                          <Edit className="h-4 w-4" />
+                          <PlusCircle className="h-4 w-4 mr-1" />
+                          Add Option
                         </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveQuestion(idx)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Select the correct answer using the radio buttons
+                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={resetQuestionForm}>
+                        Cancel
+                      </Button>
+                      <Button type="button" onClick={handleSaveQuestion}>
+                        {editingQuestionIndex !== null ? "Update Question" : "Add Question"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
-            ) : (
-              <p className="text-center py-4 text-muted-foreground border rounded-md">
-                No questions added yet. Click "Add Question" to start.
-              </p>
-            )}
+              
+              {questions.length > 0 ? (
+                <div className="space-y-2 border rounded-md p-2">
+                  {questions.map((q, idx) => (
+                    <div key={q.id} className="p-2 bg-muted rounded-md">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">Question {idx + 1}</h4>
+                          <p className="text-sm">{q.question}</p>
+                          <ul className="text-sm mt-1 space-y-1">
+                            {q.options.map((opt, optIdx) => (
+                              <li key={optIdx} className={optIdx === q.correctOption ? "font-medium text-edu-success" : ""}>
+                                {optIdx === q.correctOption ? "✓ " : ""}{opt}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="flex space-x-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditQuestion(idx)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveQuestion(idx)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-4 text-muted-foreground border rounded-md">
+                  No questions added yet. Click "Add Question" to start.
+                </p>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full bg-edu-primary hover:bg-edu-secondary" disabled={isLoading || questions.length === 0}>
+              {isLoading ? "Creating..." : "Create Quiz"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Created Quizzes</h2>
+        {quizzes.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {quizzes.map((quiz) => (
+              <Card key={quiz.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                      <CardDescription>
+                        Created on {format(new Date(quiz.createdAt), "MMM d, yyyy")}
+                      </CardDescription>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive">
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Quiz</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{quiz.title}"? This will also delete all student attempts. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteQuiz(quiz.id)}
+                            className="bg-destructive text-destructive-foreground"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{quiz.description}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Class: {quiz.classLevel} • Questions: {quiz.questions.length}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full bg-edu-primary hover:bg-edu-secondary" disabled={isLoading || questions.length === 0}>
-            {isLoading ? "Creating..." : "Create Quiz"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-6 text-muted-foreground">
+              No quizzes created yet.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
   );
 }
