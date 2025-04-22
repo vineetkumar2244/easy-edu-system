@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Content } from "@/contexts/DataContext";
@@ -14,15 +13,14 @@ interface LessonCardProps {
 export function LessonCard({ content }: LessonCardProps) {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
 
   const handleDownload = () => {
     setIsDownloading(true);
     
     try {
-      // Create an anchor element
       const a = document.createElement('a');
       a.href = content.url;
-      // Set a download attribute with the content title as filename
       a.download = `${content.title}.${content.type === "video" ? "mp4" : "pdf"}`;
       document.body.appendChild(a);
       a.click();
@@ -46,47 +44,56 @@ export function LessonCard({ content }: LessonCardProps) {
 
   const handleView = () => {
     try {
-      // For blob URLs, we need to open content in the same tab
-      if (content.url.startsWith('blob:')) {
-        // Create a temporary iframe to display the content directly
-        const iframe = document.createElement('iframe');
-        iframe.src = content.url;
-        iframe.style.position = 'fixed';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.backgroundColor = 'white';
-        iframe.style.zIndex = '9999';
+      setIsViewing(true);
+      
+      const iframe = document.createElement('iframe');
+      iframe.src = content.url;
+      iframe.style.position = 'fixed';
+      iframe.style.top = '0';
+      iframe.style.left = '0';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.backgroundColor = 'white';
+      iframe.style.zIndex = '9999';
+      
+      const closeButton = document.createElement('button');
+      closeButton.textContent = 'Close';
+      closeButton.style.position = 'fixed';
+      closeButton.style.top = '10px';
+      closeButton.style.right = '10px';
+      closeButton.style.zIndex = '10000';
+      closeButton.style.padding = '5px 10px';
+      closeButton.style.backgroundColor = '#f44336';
+      closeButton.style.color = 'white';
+      closeButton.style.border = 'none';
+      closeButton.style.borderRadius = '4px';
+      closeButton.style.cursor = 'pointer';
+      
+      closeButton.onclick = () => {
+        document.body.removeChild(iframe);
+        document.body.removeChild(closeButton);
+        document.body.style.overflow = 'auto';
+        setIsViewing(false);
+      };
+      
+      document.body.style.overflow = 'hidden';
+      document.body.appendChild(iframe);
+      document.body.appendChild(closeButton);
+      
+      iframe.onerror = () => {
+        document.body.removeChild(iframe);
+        document.body.removeChild(closeButton);
+        document.body.style.overflow = 'auto';
+        setIsViewing(false);
         
-        // Add close button
-        const closeButton = document.createElement('button');
-        closeButton.textContent = 'Close';
-        closeButton.style.position = 'fixed';
-        closeButton.style.top = '10px';
-        closeButton.style.right = '10px';
-        closeButton.style.zIndex = '10000';
-        closeButton.style.padding = '5px 10px';
-        closeButton.style.backgroundColor = '#f44336';
-        closeButton.style.color = 'white';
-        closeButton.style.border = 'none';
-        closeButton.style.borderRadius = '4px';
-        closeButton.style.cursor = 'pointer';
-        
-        closeButton.onclick = () => {
-          document.body.removeChild(iframe);
-          document.body.removeChild(closeButton);
-          document.body.style.overflow = 'auto';
-        };
-        
-        document.body.style.overflow = 'hidden';
-        document.body.appendChild(iframe);
-        document.body.appendChild(closeButton);
-      } else {
-        // For regular URLs, we can open in a new tab
-        window.open(content.url, "_blank");
-      }
+        toast({
+          title: "Content failed to load",
+          description: "Unable to display the content. Try downloading it instead.",
+          variant: "destructive",
+        });
+      };
     } catch (error) {
+      setIsViewing(false);
       toast({
         title: "Unable to open content",
         description: "There was a problem opening this content. Please try downloading it instead.",
@@ -119,8 +126,15 @@ export function LessonCard({ content }: LessonCardProps) {
         <p className="text-sm text-muted-foreground">{content.description}</p>
       </CardContent>
       <CardFooter className="flex gap-2 pt-2">
-        <Button variant="secondary" className="flex-1" onClick={handleView}>
-          {content.type === "video" ? "Watch" : "Read"}
+        <Button 
+          variant="secondary" 
+          className="flex-1" 
+          onClick={handleView}
+          disabled={isViewing}
+        >
+          {content.type === "video" ? 
+            (isViewing ? "Loading..." : "Watch") : 
+            (isViewing ? "Loading..." : "Read")}
         </Button>
         <Button 
           variant="outline" 
