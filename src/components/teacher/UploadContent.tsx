@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useData, ContentType, ClassLevel } from "@/contexts/DataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContentCard } from "./ContentCard";
+import { saveFile } from "@/utils/fileStorage";
 
 export function UploadContent() {
   const [title, setTitle] = useState("");
@@ -58,15 +60,18 @@ export function UploadContent() {
     setIsLoading(true);
     
     try {
-      // In a real app, we would upload the file to a server
-      // For now, we'll create a fake URL
-      const fakeUrl = URL.createObjectURL(file);
+      // Save the file using our storage utility
+      const filePath = await saveFile(
+        file,
+        contentType as ContentType,
+        file.name
+      );
       
       addContent({
         title,
         description,
         type: contentType as ContentType,
-        url: fakeUrl,
+        url: filePath, // Store the file path instead of the URL
         classLevel: classLevel as ClassLevel,
         createdBy: user?.id || "",
       });
@@ -89,6 +94,7 @@ export function UploadContent() {
         description: "Failed to upload content. Please try again.",
         variant: "destructive",
       });
+      console.error("Upload error:", error);
     } finally {
       setIsLoading(false);
     }
